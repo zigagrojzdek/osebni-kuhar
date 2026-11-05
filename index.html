@@ -2248,9 +2248,10 @@ function renderRecipesIfVisible() {
 }
 
 async function syncProfile() {
-  if (!AUTH.user) return;
+  if (!AUTH.user) { console.log('[syncProfile] skip — no user'); return; }
   try {
     const s = typeof tdeeState !== 'undefined' ? tdeeState : {};
+    console.log('[syncProfile] tdeeState:', JSON.stringify(s));
     const payload = {
       id: AUTH.user.id,
       email: AUTH.user.email,
@@ -2263,8 +2264,12 @@ async function syncProfile() {
     if (s.activityFactor)  payload.activity_factor = s.activityFactor;
     if (s.dailyKcal)       payload.daily_kcal      = Math.round(s.dailyKcal);
     if (s.dailyProt)       payload.daily_prot      = Math.round(s.dailyProt);
-    await _sb.from('profiles').upsert(payload, { onConflict: 'id' });
-  } catch(e) { /* non-blocking */ }
+    console.log('[syncProfile] payload:', JSON.stringify(payload));
+    const { data, error } = await _sb.from('profiles').upsert(payload, { onConflict: 'id' });
+    console.log('[syncProfile] result → data:', data, '| error:', error);
+  } catch(e) {
+    console.error('[syncProfile] catch:', e);
+  }
 }
 
 async function checkPremiumStatus() {
@@ -2315,14 +2320,26 @@ async function initAuth() {
       checkPremiumStatus();
       // Supabase profil je source of truth za routing
       await routeByProfile();
+      // Re-renderiraj recepte z pravilnim AUTH.user stanjem (odkleni kartice)
+      renderRecipesIfVisible();
+    } else {
+      // Ni veljavne seje — re-renderiraj recepte da se prikažejo locki
+      // (restoreState() je morda že prikazal view-3 iz localStorage)
+      AUTH.user = null;
+      renderRecipesIfVisible();
     }
-  } catch(e) { /* silent fail */ }
+  } catch(e) {
+    // Ob napaki (offline, etc.) — re-renderiraj z zaklenjenimi recepti
+    AUTH.user = null;
+    renderRecipesIfVisible();
+  }
 
   _sb.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       AUTH.user = session.user;
       updateAuthUI();
-      // Po email potrditvi → routing iz Supabase profila
+      // Po email potrditvi → shrani localStorage podatke v Supabase, potem routing
+      syncProfile();
       routeByProfile();
     } else if (event === 'SIGNED_OUT') {
       AUTH.user = null;
