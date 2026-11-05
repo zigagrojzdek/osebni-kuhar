@@ -5051,7 +5051,15 @@ function renderRecipes(showAll) {
 
   // Guided mode: show only top 5 unless showAll requested
   const isGuidedFiltered = guidedMode && !showAll && currentFilter === 'vse';
-  const displayList = isGuidedFiltered ? filtered.slice(0, 6) : filtered;
+  let displayList;
+  if (isGuidedFiltered) {
+    const freeInFiltered = filtered.filter(r => FREE_RECIPE_IDS.has(r.id));
+    const premiumInFiltered = filtered.filter(r => !FREE_RECIPE_IDS.has(r.id));
+    const premiumSlots = Math.max(0, 6 - freeInFiltered.length);
+    displayList = [...freeInFiltered, ...premiumInFiltered.slice(0, premiumSlots)];
+  } else {
+    displayList = filtered;
+  }
 
   // Show/hide "prikaži vse" button
   let showAllBtn = document.getElementById('show-all-btn');
