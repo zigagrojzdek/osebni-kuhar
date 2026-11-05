@@ -2363,9 +2363,11 @@ async function routeByProfile() {
       targetMacros = null; // brez specifičnega obroka — browse mode
       showView(3);
       renderRecipes(false);
+      return true; // navigiral
     }
     // Če profil ni izpolnjen → ostani na view-1 (onboarding)
-  } catch(e) { /* tiho — ostani na view-1 */ }
+    return false;
+  } catch(e) { return false; /* tiho — ostani na view-1 */ }
 }
 
 async function initAuth() {
@@ -2376,18 +2378,23 @@ async function initAuth() {
       updateAuthUI();
       // checkPremiumStatus() NE kličemo — routeByProfile() nastavi AUTH.isPremium iz has_access
       // Supabase profil je source of truth za routing
-      await routeByProfile();
+      const routed = await routeByProfile();
+      if (!routed) {
+        // Supabase profil ni izpolnjen — poskusi z localStorage stanjem
+        _navigateFromState();
+      }
       // Re-renderiraj recepte z pravilnim AUTH.user stanjem (odkleni kartice)
       renderRecipesIfVisible();
     } else {
-      // Ni veljavne seje — re-renderiraj recepte da se prikažejo locki
-      // (restoreState() je morda že prikazal view-3 iz localStorage)
+      // Ni veljavne seje — vrni na view-1, ne glede na localStorage
       AUTH.user = null;
+      showView(1);
       renderRecipesIfVisible();
     }
   } catch(e) {
-    // Ob napaki (offline, etc.) — re-renderiraj z zaklenjenimi recepti
+    // Ob napaki (offline, etc.) — vrni na view-1
     AUTH.user = null;
+    showView(1);
     renderRecipesIfVisible();
   }
 
@@ -5444,55 +5451,56 @@ function restoreState() {
       document.getElementById('result-card').classList.add('show');
     }
 
-    // Odloči kam navigiramo
-    if (guidedMode && mealPlan.length > 0) {
-      // Preveri ali so vsi obroki izbrani
-      // Veljavni samo tisti elementi ki so objekti z kcal (ne null, ne nepopolni)
-      const allDone = mealChosen.length > 0 && mealChosen.every(m => m !== null && typeof m === 'object' && typeof m.kcal === 'number');
-      if (allDone) {
-        // Pokaži summary
-        showView(3);
-        showDailySummary();
-      } else {
-        // Nadaljuj na obrok
-        setV2Goal();
-        showView(3);
-        activateMeal(currentMealIdx);
-      }
-    } else if (mealPlan.length > 0) {
-      // Bil na view 2 — shrani mealChosen pred klicem selectMealCount (ki ga ponastavi)
-      const savedChosen = mealChosen.slice();
-      setV2Goal();
-      selectMealCount(mealPlan.length, document.querySelectorAll('.meal-count-card')[mealPlan.length - 3]);
-      // Obnovi izbrane recepte (selectMealCount jih ponastavi)
-      mealChosen = savedChosen;
-      // Re-renderiraj preview kartice z obnovljenim mealChosen (.chosen state)
-      const preview = document.getElementById('meal-plan-preview');
-      if (preview && mealPlan.length > 0) {
-        preview.innerHTML = mealPlan.map((m, mi) => {
-          const chosen = mealChosen[mi];
-          const isChosen = chosen && chosen.name;
-          return `<div class="meal-preview-card${isChosen ? ' chosen' : ''}" onclick="startMealFlowAt(${mi})">
-          <div class="meal-preview-icon">${m.icon}</div>
-          <div class="meal-preview-info">
-            <div class="meal-preview-name">${m.name}</div>
-            ${isChosen
-              ? `<div class="meal-preview-macros" style="color:var(--accent)">✅ ${chosen.name}</div>`
-              : `<div class="meal-preview-macros" style="color:var(--text3)">Tapni za izbiro recepta →</div>`
-            }
-          </div>
-          ${isChosen
-            ? `<div style="font-size:11px;color:var(--text3);flex-shrink:0;">Zamenjaj</div>`
-            : `<div style="font-size:18px;color:var(--accent);flex-shrink:0;">＋</div>`
-          }
-        </div>`;
-        }).join('');
-      }
-      showView(2);
-    }
+    // Navigacijo prepustimo initAuth() — ta funkcija samo obnovi podatke
     return true;
   } catch(e) {
     return false;
+  }
+}
+
+// Navigacija po obnovi localStorage stanja — kliče jo initAuth() po potrditvi seje
+function _navigateFromState() {
+  if (guidedMode && mealPlan.length > 0) {
+    const allDone = mealChosen.length > 0 && mealChosen.every(m => m !== null && typeof m === 'object' && typeof m.kcal === 'number');
+    if (allDone) {
+      showView(3);
+      showDailySummary();
+    } else {
+      setV2Goal();
+      showView(3);
+      activateMeal(currentMealIdx);
+    }
+  } else if (mealPlan.length > 0) {
+    const savedChosen = mealChosen.slice();
+    setV2Goal();
+    selectMealCount(mealPlan.length, document.querySelectorAll('.meal-count-card')[mealPlan.length - 3]);
+    mealChosen = savedChosen;
+    const preview = document.getElementById('meal-plan-preview');
+    if (preview && mealPlan.length > 0) {
+      preview.innerHTML = mealPlan.map((m, mi) => {
+        const chosen = mealChosen[mi];
+        const isChosen = chosen && chosen.name;
+        return `<div class="meal-preview-card${isChosen ? ' chosen' : ''}" onclick="startMealFlowAt(${mi})">
+        <div class="meal-preview-icon">${m.icon}</div>
+        <div class="meal-preview-info">
+          <div class="meal-preview-name">${m.name}</div>
+          ${isChosen
+            ? `<div class="meal-preview-macros" style="color:var(--accent)">✅ ${chosen.name}</div>`
+            : `<div class="meal-preview-macros" style="color:var(--text3)">Tapni za izbiro recepta →</div>`
+          }
+        </div>
+        ${isChosen
+          ? `<div style="font-size:11px;color:var(--text3);flex-shrink:0;">Zamenjaj</div>`
+          : `<div style="font-size:18px;color:var(--accent);flex-shrink:0;">＋</div>`
+        }
+      </div>`;
+      }).join('');
+    }
+    showView(2);
+  } else {
+    // localStorage ima TDEE podatke, ampak ni mealPlan — pokaži recepte
+    showView(3);
+    renderRecipes(false);
   }
 }
 
