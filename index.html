@@ -2216,10 +2216,20 @@ function closeAuthModal() {
 function openPaywall() {
   document.getElementById('paywall-overlay').classList.add('open');
 }
+window.openPaywall = openPaywall;
+
+function startCheckout() {
+  // TODO: Stripe Checkout
+  // Primer: window.location.href = 'https://buy.stripe.com/YOUR_LINK';
+  // Ali: stripe.redirectToCheckout({ sessionId: ... });
+  console.log('[Checkout] Stripe ni še integriran.');
+}
+window.startCheckout = startCheckout;
 
 function closePaywall() {
   document.getElementById('paywall-overlay').classList.remove('open');
 }
+window.closePaywall = closePaywall;
 
 function switchAuthTab(tab) {
   AUTH._currentTab = tab;
@@ -5571,7 +5581,7 @@ initAuth();
     </ul>
     <div class="paywall-price">49 €</div>
     <div class="paywall-price-note">enkratno plačilo &mdash; doživljenjski dostop</div>
-    <button class="paywall-cta" onclick="alert('Kmalu na voljo!')">Odkleni zdaj</button>
+    <button class="paywall-cta" onclick="startCheckout()">Odkleni zdaj</button>
   </div>
 </div>
 
