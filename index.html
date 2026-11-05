@@ -2189,7 +2189,7 @@ async function handleAuthSubmit() {
     } else {
       console.log('[Auth] signUp → href:', window.location.href, '| protocol:', window.location.protocol);
       console.log('[Auth] _sb.auth:', typeof _sb.auth, '| signUp fn:', typeof _sb.auth?.signUp);
-      result = await _sb.auth.signUp({ email, password, options: { emailRedirectTo: window.location.protocol === 'file:' ? 'http://localhost:8080/osebni_kuhar_v4.html' : window.location.href } });
+      result = await _sb.auth.signUp({ email, password, options: { emailRedirectTo: 'https://zigagrojzdek.github.io/osebni-kuhar/' } });
       if (!result.error && result.data?.user && !result.data.session) {
         showAuthMsg('Preveri e-pošto in potrdi račun.', 'success');
         btn.disabled = false;
@@ -2275,6 +2275,37 @@ async function checkPremiumStatus() {
   } catch(e) { AUTH.isPremium = false; }
 }
 
+async function routeByProfile() {
+  // Kliče se samo ko je user prijavljen in localStorage ni zadosten
+  // Prebere profil iz Supabase in odloči view
+  try {
+    const { data: profile } = await _sb
+      .from('profiles')
+      .select('height, weight, age, goal, daily_kcal, daily_prot, activity_factor')
+      .eq('id', AUTH.user.id)
+      .single();
+
+    const hasProfile = profile && profile.height && profile.weight && profile.age && profile.goal && profile.daily_kcal;
+
+    if (hasProfile) {
+      // Naloži podatke v tdeeState in pojdi na recepte
+      Object.assign(tdeeState, {
+        height: profile.height,
+        weight: profile.weight,
+        age: profile.age,
+        goal: profile.goal,
+        activityFactor: profile.activity_factor || 1.375,
+        dailyKcal: profile.daily_kcal,
+        dailyProt: profile.daily_prot || Math.min(160, Math.round(profile.weight * 2.0)),
+      });
+      targetMacros = null; // brez specifičnega obroka — browse mode
+      showView(3);
+      renderRecipes(false);
+    }
+    // Če profil ni izpolnjen → ostani na view-1 (onboarding)
+  } catch(e) { /* tiho — ostani na view-1 */ }
+}
+
 async function initAuth() {
   try {
     const { data: { session } } = await _sb.auth.getSession();
@@ -2282,6 +2313,8 @@ async function initAuth() {
       AUTH.user = session.user;
       updateAuthUI();
       checkPremiumStatus();
+      // Supabase profil je source of truth za routing
+      await routeByProfile();
     }
   } catch(e) { /* silent fail */ }
 
@@ -2289,6 +2322,8 @@ async function initAuth() {
     if (event === 'SIGNED_IN' && session?.user) {
       AUTH.user = session.user;
       updateAuthUI();
+      // Po email potrditvi → routing iz Supabase profila
+      routeByProfile();
     } else if (event === 'SIGNED_OUT') {
       AUTH.user = null;
       AUTH.isPremium = false;
