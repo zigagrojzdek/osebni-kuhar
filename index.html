@@ -2275,8 +2275,13 @@ async function syncProfile() {
 async function checkPremiumStatus() {
   if (!AUTH.user) { AUTH.isPremium = false; return; }
   try {
-    const { data } = await _sb.rpc('get_my_premium_status');
-    AUTH.isPremium = !!data;
+    const { data: profile } = await _sb
+      .from('profiles')
+      .select('has_access')
+      .eq('id', AUTH.user.id)
+      .single();
+    // Edini vir resnice za premium: profiles.has_access
+    AUTH.isPremium = profile?.has_access === true;
   } catch(e) { AUTH.isPremium = false; }
 }
 
@@ -2286,9 +2291,12 @@ async function routeByProfile() {
   try {
     const { data: profile } = await _sb
       .from('profiles')
-      .select('height, weight, age, goal, daily_kcal, daily_prot, activity_factor')
+      .select('height, weight, age, goal, daily_kcal, daily_prot, activity_factor, has_access')
       .eq('id', AUTH.user.id)
       .single();
+
+    // Privzeto zaklenjen — has_access mora biti eksplicitno true
+    AUTH.isPremium = profile?.has_access === true;
 
     const hasProfile = profile && profile.height && profile.weight && profile.age && profile.goal && profile.daily_kcal;
 
@@ -2317,7 +2325,7 @@ async function initAuth() {
     if (session?.user) {
       AUTH.user = session.user;
       updateAuthUI();
-      checkPremiumStatus();
+      // checkPremiumStatus() NE kličemo — routeByProfile() nastavi AUTH.isPremium iz has_access
       // Supabase profil je source of truth za routing
       await routeByProfile();
       // Re-renderiraj recepte z pravilnim AUTH.user stanjem (odkleni kartice)
@@ -5082,7 +5090,8 @@ function renderRecipes(showAll) {
       </div>
     `;
     // Lock card for non-logged-in users (only free recipes accessible)
-    const isLocked = !AUTH.user && !FREE_RECIPE_IDS.has(recipe.id);
+    // Zaklenjeno: neprijavljen ALI prijavljen brez has_access
+    const isLocked = (!AUTH.user || !AUTH.isPremium) && !FREE_RECIPE_IDS.has(recipe.id);
     if (isLocked) {
       const lockOverlay = document.createElement('div');
       lockOverlay.className = 'recipe-locked';
