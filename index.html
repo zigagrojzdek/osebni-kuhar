@@ -2305,7 +2305,7 @@ async function startCheckout() {
     if (!token) throw new Error('Neveljavna seja.');
 
     const res = await fetch(
-      'https://zojczxojdfdaedtuvang.supabase.co/functions/v1/create-checkout',
+      'https://zojczxojdfdaedtuvang.supabase.co/functions/v1/create-checkout-session',
       {
         method: 'POST',
         headers: {
