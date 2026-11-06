@@ -1,4 +1,3 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!DOCTYPE html>
 <html lang="sl">
 <head>
@@ -5122,6 +5121,20 @@ function renderRecipes(showAll) {
     recipes.filter(r => r.cat.includes(currentFilter));
 
   if (targetMacros) {
+    // V guided mode: za kosilo/večerjo filtriraj ven recepte ki so SAMO snack/breakfast
+    if (guidedMode && currentMealIdx >= 0 && mealPlan[currentMealIdx]) {
+      const mealName = mealPlan[currentMealIdx].name.toLowerCase();
+      const isMainMeal = mealName.includes('kosilo') || mealName.includes('večerja');
+      if (isMainMeal) {
+        const mainMealFiltered = filtered.filter(r => {
+          const types = mealTypeMap[r.id] || ['lunch'];
+          return types.includes('lunch') || types.includes('dinner');
+        });
+        // Samo zamenjaj če ostane dovolj receptov (varovalka)
+        if (mainMealFiltered.length >= 3) filtered = mainMealFiltered;
+      }
+    }
+
     filtered = [...filtered].sort((a, b) => {
       // In guided mode: boost recipes matching current mealType
       let aScore = getMatchScore(a);
@@ -5725,4 +5738,3 @@ initAuth();
 
 </body>
 </html>
-</body></html>
