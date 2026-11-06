@@ -2288,11 +2288,44 @@ function openPaywall() {
 }
 window.openPaywall = openPaywall;
 
-function startCheckout() {
-  // TODO: Stripe Checkout
-  // Primer: window.location.href = 'https://buy.stripe.com/YOUR_LINK';
-  // Ali: stripe.redirectToCheckout({ sessionId: ... });
-  console.log('[Checkout] Stripe ni še integriran.');
+async function startCheckout() {
+  if (!AUTH.user) {
+    // Ni prijavljen — odpri auth modal najprej
+    closePaywall();
+    openAuthModal();
+    return;
+  }
+
+  const btn = document.querySelector('.paywall-cta');
+  if (btn) { btn.disabled = true; btn.textContent = 'Preusmerjam...'; }
+
+  try {
+    const session = await _sb.auth.getSession();
+    const token = session?.data?.session?.access_token;
+    if (!token) throw new Error('Neveljavna seja.');
+
+    const res = await fetch(
+      'https://zojczxojdfdaedtuvang.supabase.co/functions/v1/create-checkout',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+      }
+    );
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Napaka pri plačilu.');
+
+    // Preusmeri na Stripe Checkout
+    window.location.href = data.url;
+
+  } catch (err) {
+    console.error('[Checkout]', err);
+    showToast('Napaka: ' + (err.message || 'Poskusi znova.'));
+    if (btn) { btn.disabled = false; btn.textContent = 'Odkleni dostop →'; }
+  }
 }
 window.startCheckout = startCheckout;
 
@@ -2575,7 +2608,7 @@ const recipes = [
     tags: ["protein", "quick", "sweet"],
     time: "5 min",
     minKcal: 250, maxKcal: 800,
-    base: { kcal: 521, prot: 44, carbs: 54, fat: 13.1 },
+    base: { kcal: 495, prot: 43.6, carbs: 52.4, fat: 13 },
     ingredients: [
       { name: "Riževi kolački", amount: 4, unit: "kos", kcalPer100: 380, protPer100: 8, carbsPer100: 81, fatPer100: 2.8, gramsPerUnit: 10 },
       { name: "Skyr (navaden)", amount: 150, unit: "g", kcalPer100: 63, protPer100: 11, carbsPer100: 4, fatPer100: 0.2 },
@@ -2629,9 +2662,9 @@ const recipes = [
     tags: ["savory", "protein"],
     time: "15 min",
     minKcal: 350, maxKcal: 600,
-    base: { kcal: 450, prot: 37, carbs: 38, fat: 14 },
+    base: { kcal: 461, prot: 43.3, carbs: 39.4, fat: 12.8 },
     ingredients: [
-      { name: "Polnozrnata tortila", amount: 1, unit: "kos", kcalPer100: 290, protPer100: 8, carbsPer100: 48, fatPer100: 6 },
+      { name: "Polnozrnata tortila", amount: 1, unit: "kos", kcalPer100: 290, protPer100: 8, carbsPer100: 48, fatPer100: 6, gramsPerUnit: 65 },
       { name: "Paradižnikova omaka", amount: 60, unit: "g", kcalPer100: 35, protPer100: 1.5, carbsPer100: 6, fatPer100: 0.5 },
       { name: "Mozzarella light", amount: 50, unit: "g", kcalPer100: 190, protPer100: 18, carbsPer100: 2, fatPer100: 12 },
       { name: "Piščančja prsa (surova)", amount: 120, unit: "g", kcalPer100: 115, protPer100: 23, carbsPer100: 0, fatPer100: 2 },
@@ -2657,7 +2690,7 @@ const recipes = [
     tags: ["protein", "sweet", "quick"],
     time: "5 min",
     minKcal: 180, maxKcal: 400,
-    base: { kcal: 220, prot: 24, carbs: 18, fat: 4 },
+    base: { kcal: 212, prot: 25, carbs: 22.1, fat: 2.5 },
     ingredients: [
       { name: "Skyr (navaden)", amount: 200, unit: "g", kcalPer100: 63, protPer100: 11, carbsPer100: 4, fatPer100: 0.2 },
       { name: "Kakav v prahu (nesladkan)", amount: 15, unit: "g", kcalPer100: 228, protPer100: 20, carbsPer100: 10, fatPer100: 14 },
@@ -2712,7 +2745,7 @@ const recipes = [
     tags: ["sweet", "quick", "protein"],
     time: "5 min + zamrzovanje",
     minKcal: 180, maxKcal: 380,
-    base: { kcal: 260, prot: 22, carbs: 34, fat: 3 },
+    base: { kcal: 275, prot: 20, carbs: 48.1, fat: 2.2 },
     ingredients: [
       { name: "Banana (zamrznjena)", amount: 150, unit: "g", kcalPer100: 89, protPer100: 1, carbsPer100: 23, fatPer100: 0.3 },
       { name: "Skyr (navaden)", amount: 150, unit: "g", kcalPer100: 63, protPer100: 11, carbsPer100: 4, fatPer100: 0.2 },
@@ -2766,7 +2799,7 @@ const recipes = [
     tags: ["savory", "protein", "quick"],
     time: "15 min",
     minKcal: 350, maxKcal: 650,
-    base: { kcal: 460, prot: 47, carbs: 34, fat: 15 },
+    base: { kcal: 441, prot: 46.9, carbs: 31.9, fat: 13.2 },
     ingredients: [
       { name: "Polnozrnata tortila", amount: 1, unit: "kos", kcalPer100: 280, protPer100: 8, carbsPer100: 48, fatPer100: 5, gramsPerUnit: 50 },
       { name: "Piščančja prsa (surova)", amount: 120, unit: "g", kcalPer100: 165, protPer100: 31, carbsPer100: 0, fatPer100: 3.6 },
@@ -2794,7 +2827,7 @@ const recipes = [
     tags: ["protein", "sweet", "quick"],
     time: "10 min + 1h hlajenje",
     minKcal: 200, maxKcal: 500,
-    base: { kcal: 425, prot: 25, carbs: 47, fat: 15 },
+    base: { kcal: 425, prot: 25.2, carbs: 46.2, fat: 15.4 },
     ingredients: [
       { name: "Skyr (navaden)", amount: 150, unit: "g", kcalPer100: 63, protPer100: 11, carbsPer100: 4, fatPer100: 0.2 },
       { name: "Kremni sir light (Philadelphia)", amount: 80, unit: "g", kcalPer100: 145, protPer100: 7, carbsPer100: 4, fatPer100: 11 },
@@ -3048,7 +3081,7 @@ const recipes = [
     tags: ["protein", "sweet"],
     time: "20 min",
     minKcal: 350, maxKcal: 850,
-    base: { kcal: 805, prot: 30, carbs: 79, fat: 41 },
+    base: { kcal: 805, prot: 28.9, carbs: 81.5, fat: 40.5 },
     ingredients: [
       { name: "Ovseni kosmiči", amount: 80, unit: "g", kcalPer100: 370, protPer100: 13, carbsPer100: 60, fatPer100: 7 },
       { name: "Arašidovo maslo", amount: 40, unit: "g", kcalPer100: 588, protPer100: 23, carbsPer100: 20, fatPer100: 50 },
@@ -3076,7 +3109,7 @@ const recipes = [
     tags: ["protein", "sweet"],
     time: "15 min",
     minKcal: 300, maxKcal: 600,
-    base: { kcal: 576, prot: 30, carbs: 32, fat: 33 },
+    base: { kcal: 576, prot: 29.6, carbs: 36.8, fat: 32.7 },
     ingredients: [
       { name: "Jajca", amount: 2, unit: "kos", kcalPer100: 143, protPer100: 12.6, carbsPer100: 0.7, fatPer100: 9.5, gramsPerUnit: 60 },
       { name: "Temna čokolada 85%", amount: 40, unit: "g", kcalPer100: 598, protPer100: 8, carbsPer100: 31, fatPer100: 46 },
@@ -3135,7 +3168,7 @@ const recipes = [
     tags: ["protein", "savory"],
     time: "30 min",
     minKcal: 400, maxKcal: 850,
-    base: { kcal: 534, prot: 60, carbs: 37, fat: 19 },
+    base: { kcal: 559, prot: 59.5, carbs: 36.6, fat: 18.6 },
     ingredients: [
       { name: "Goveje meso 5% maščobe", amount: 200, unit: "g", kcalPer100: 136, protPer100: 22, carbsPer100: 0, fatPer100: 5 },
       { name: "Ovseni kosmiči (namočeni)", amount: 30, unit: "g", kcalPer100: 370, protPer100: 13, carbsPer100: 60, fatPer100: 7 },
@@ -3163,7 +3196,7 @@ const recipes = [
     tags: ["protein", "savory"],
     time: "30 min",
     minKcal: 400, maxKcal: 850,
-    base: { kcal: 579, prot: 53, carbs: 47, fat: 21 },
+    base: { kcal: 594, prot: 53.4, carbs: 50.3, fat: 21.5 },
     ingredients: [
       { name: "Goveje stegno (pusto)", amount: 180, unit: "g", kcalPer100: 158, protPer100: 26, carbsPer100: 0, fatPer100: 6 },
       { name: "Sladki krompir", amount: 200, unit: "g", kcalPer100: 86, protPer100: 1.6, carbsPer100: 20, fatPer100: 0.1 },
@@ -3245,7 +3278,7 @@ const recipes = [
     tags: ["protein", "savory", "quick"],
     time: "10 min",
     minKcal: 300, maxKcal: 550,
-    base: { kcal: 518, prot: 30, carbs: 36, fat: 29 },
+    base: { kcal: 496, prot: 30.3, carbs: 35.6, fat: 29.2 },
     ingredients: [
       { name: "Jajca", amount: 3, unit: "kos", kcalPer100: 143, protPer100: 13, carbsPer100: 1.1, fatPer100: 11, gramsPerUnit: 60 },
       { name: "Polnozrnat kruh", amount: 2, unit: "kos", kcalPer100: 247, protPer100: 9, carbsPer100: 45, fatPer100: 3, gramsPerUnit: 30 },
@@ -3300,7 +3333,7 @@ const recipes = [
     cat: ["slano"],
     tags: ["protein", "savory"],
     time: "20 min",
-    minKcal: 450, maxKcal: 900,
+    minKcal: 450, maxKcal: 1100,
     base: { kcal: 767, prot: 75, carbs: 60, fat: 23 },
     ingredients: [
       { name: "Polnozrnate testenine (špageti)", amount: 80, unit: "g", kcalPer100: 352, protPer100: 13, carbsPer100: 67, fatPer100: 2 },
@@ -3328,7 +3361,7 @@ const recipes = [
     cat: ["slano"],
     tags: ["protein", "savory"],
     time: "25 min",
-    minKcal: 450, maxKcal: 1100,
+    minKcal: 450, maxKcal: 1300,
     base: { kcal: 702, prot: 48, carbs: 83, fat: 20 },
     ingredients: [
       { name: "Polnozrnate testenine (suhe)", amount: 100, unit: "g", kcalPer100: 352, protPer100: 13, carbsPer100: 67, fatPer100: 2 },
@@ -3356,7 +3389,7 @@ const recipes = [
     cat: ["slano"],
     tags: ["protein", "savory"],
     time: "30 min",
-    minKcal: 400, maxKcal: 1000,
+    minKcal: 400, maxKcal: 1200,
     base: { kcal: 708, prot: 59, carbs: 72, fat: 18 },
     ingredients: [
       { name: "Piščančja prsa (surova)", amount: 150, unit: "g", kcalPer100: 165, protPer100: 31, carbsPer100: 0, fatPer100: 3.6 },
@@ -3411,7 +3444,7 @@ const recipes = [
     tags: ["protein", "savory"],
     time: "20 min",
     minKcal: 350, maxKcal: 900,
-    base: { kcal: 356, prot: 39, carbs: 45, fat: 2 },
+    base: { kcal: 356, prot: 39.1, carbs: 46.8, fat: 2.1 },
     ingredients: [
       { name: "Krompir (kuhan)", amount: 200, unit: "g", kcalPer100: 86, protPer100: 2.1, carbsPer100: 20, fatPer100: 0.1 },
       { name: "Tuna v lastnem soku", amount: 120, unit: "g", kcalPer100: 103, protPer100: 23, carbsPer100: 0, fatPer100: 1 },
@@ -3438,7 +3471,7 @@ const recipes = [
     cat: ["slano"],
     tags: ["protein", "savory"],
     time: "35 min",
-    minKcal: 400, maxKcal: 1100,
+    minKcal: 400, maxKcal: 1300,
     base: { kcal: 744, prot: 80.1, carbs: 59.4, fat: 20.8 },
     ingredients: [
       { name: "Piščančja prsa (surova)", amount: 200, unit: "g", kcalPer100: 165, protPer100: 31, carbsPer100: 0, fatPer100: 3.6 },
@@ -4935,7 +4968,7 @@ function getScaledMacros(recipe, scale, flexBoost) {
 
   recipe.ingredients.forEach(ing => {
     const nameLower = ing.name.toLowerCase();
-    const isKos = ing.unit === 'kos' || countableItems.some(c => nameLower.includes(c));
+    const isKos = ing.unit === 'kos' || (ing.unit !== 'g' && ing.unit !== 'ml' && countableItems.some(c => nameLower.includes(c)));
     const qty = parseFloat(roundIngredient(ing, scale, fb));
     if (!isKos) {
       if (!isNaN(qty)) {
@@ -4966,7 +4999,7 @@ function getScaledMacros(recipe, scale, flexBoost) {
     let knownBaseKcal = 0, knownBaseProt = 0, knownBaseCarbs = 0, knownBaseFat = 0;
     recipe.ingredients.forEach(ing => {
       const nameLower = ing.name.toLowerCase();
-      const isKos = ing.unit === 'kos' || countableItems.some(c => nameLower.includes(c));
+      const isKos = ing.unit === 'kos' || (ing.unit !== 'g' && ing.unit !== 'ml' && countableItems.some(c => nameLower.includes(c)));
       if (!isKos) {
         knownBaseKcal  += ing.kcalPer100  * ing.amount / 100;
         knownBaseProt  += ing.protPer100  * ing.amount / 100;
@@ -5012,7 +5045,7 @@ function isKosIncompatible(recipe) {
   const kcalDev = (actualMacros.kcal - targetMacros.kcal) / targetMacros.kcal;
   // Samo recepti z kos-sestavinami z gramsPerUnit (ki so vzrok deviacije)
   const hasFixedKos = recipe.ingredients.some(ing => {
-    const isKos = ing.unit === 'kos' || countableItems.some(c => ing.name.toLowerCase().includes(c));
+    const isKos = ing.unit === 'kos' || (ing.unit !== 'g' && ing.unit !== 'ml' && countableItems.some(c => ing.name.toLowerCase().includes(c)));
     return isKos && ing.gramsPerUnit;
   });
   return hasFixedKos && Math.abs(kcalDev) > 0.25;
@@ -5650,6 +5683,26 @@ if (!restoreState()) {
 }
 initAuth();
 
+// Po vrnitvi iz Stripe Checkout — preveri payment status iz URL parametra
+(function handlePaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const payment = params.get('payment');
+  if (!payment) return;
+  // Počisti URL parameter (brez page reload)
+  const cleanUrl = window.location.pathname;
+  window.history.replaceState({}, '', cleanUrl);
+  if (payment === 'success') {
+    // Počakaj da initAuth() nastavi AUTH.user, nato preveri premium
+    setTimeout(async () => {
+      await checkPremiumStatus();
+      renderRecipesIfVisible();
+      showToast('✅ Plačilo uspešno! Dostop je aktiviran.');
+    }, 1500);
+  } else if (payment === 'cancelled') {
+    showToast('Plačilo preklicano.');
+  }
+})();
+
 </script>
 
 <!-- Zaključna animacija overlay -->
@@ -5659,31 +5712,31 @@ initAuth();
     <button class="paywall-close" onclick="closePaywall()" aria-label="Zapri">×</button>
 
     <div class="paywall-eyebrow">Osebni Kuhar Premium</div>
-    <h2 class="paywall-title">Nehaj ugibati,<br>kaj jesti danes.</h2>
-    <p class="paywall-desc">Aplikacija izračuna točne količine za tvoje kalorije in beljakovine — ti samo skuhaš.</p>
+    <h2 class="paywall-title">Ne razmišljaj več vsak dan,<br>kaj boš jedel.</h2>
+    <p class="paywall-desc">Izberi svoj cilj, vnesi svoje podatke in aplikacija ti prilagodi recepte glede na tvoje kalorije in beljakovine. Ti dobiš točne količine sestavin, priprava pa je enostavna.</p>
 
     <ul class="paywall-features">
       <li>
         <span class="feat-icon">🍽️</span>
-        <span><strong>40+ receptov</strong> — sladko, slano, hitro, brez skrivnosti</span>
+        <span><strong>40+ receptov za vsak dan</strong> — zajtrki, kosila, večerje in malice, ki jih lahko normalno pripraviš tudi ob napornem urniku</span>
       </li>
       <li>
         <span class="feat-icon">⚖️</span>
-        <span><strong>Količine prilagojene tebi</strong> — ne gre za povprečje, ampak tvoje makre</span>
+        <span><strong>Količine prilagojene tvojemu cilju</strong> — vsak recept se prilagodi tvojim potrebam, zato veš točno koliko posamezne sestavine potrebuješ</span>
       </li>
       <li>
         <span class="feat-icon">🧮</span>
-        <span><strong>Nič računanja</strong> — kcal, beljakovine in gramatura so že urejeni</span>
+        <span><strong>Brez nepotrebnega računanja</strong> — kalorije, beljakovine in količine so že izračunane. Tvoja naloga je samo, da skuhaš in slediš planu</span>
       </li>
       <li>
         <span class="feat-icon">♾️</span>
-        <span><strong>Enkrat plačaš, imaš za vedno</strong> — brez naročnine, brez presenečenj</span>
+        <span><strong>Enkratno plačilo, doživljenjski dostop</strong> — brez naročnine in brez mesečnih stroškov</span>
       </li>
     </ul>
 
     <!-- Trust element -->
     <div class="paywall-social-proof">
-      🧑‍💻 <em>Aplikacijo je sestavil osebni trener z izkušnjami iz stotih prehranskih planov. Vsi recepti in količine so preizkušeni v praksi — ne na papirju.</em>
+      🧑‍💻 <em>Aplikacijo sem ustvaril na podlagi izkušenj iz prehranskih planov za moje stranke. Recepti in količine niso samo izračuni na papirju, ampak so pripravljeni tako, da delujejo v praksi.</em>
     </div>
 
     <hr class="paywall-divider">
