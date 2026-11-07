@@ -2329,6 +2329,14 @@ async function startCheckout() {
 }
 window.startCheckout = startCheckout;
 
+// Resetiraj checkout gumb ob vrnitvi iz Stripe z Back gumbom (bfcache restore)
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) {
+    const btn = document.querySelector('.paywall-cta');
+    if (btn) { btn.disabled = false; btn.textContent = 'Odkleni dostop →'; }
+  }
+});
+
 function closePaywall() {
   document.getElementById('paywall-overlay').classList.remove('open');
 }
