@@ -2331,6 +2331,7 @@ window.startCheckout = startCheckout;
 
 // Resetiraj checkout gumb ob vrnitvi iz Stripe z Back gumbom (bfcache restore)
 window.addEventListener('pageshow', (e) => {
+  console.log('[pageshow]', e.persisted);
   if (e.persisted) {
     const btn = document.querySelector('.paywall-cta');
     if (btn) { btn.disabled = false; btn.textContent = 'Odkleni dostop →'; }
