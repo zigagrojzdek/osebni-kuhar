@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fit Lab — Osebni kuhar</title>
+<title>Osebni Kuhar</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -1888,7 +1888,7 @@
     <span class="auth-dot" id="auth-dot-v1"></span>
     <span id="auth-btn-label-v1">Prijava</span>
   </button>
-  <div class="logo-chip">Fit Lab · Osebni kuhar</div>
+  <div class="logo-chip">Osebni Kuhar</div>
 
   <h1 class="view-title">Tvoj osebni<br><em>prehranski plan.</em></h1>
   <p class="view-sub">Vpiši podatke — izračunam tvoje makre in sestavim jedilnik po meri. Brez ugibanja, brez tehtanja.</p>
@@ -2033,7 +2033,7 @@
 
   <button class="secondary-btn" onclick="showView(1)" style="width:auto;padding:8px 16px;margin-bottom:24px;font-size:13px;">← Nazaj</button>
 
-  <div class="logo-chip">Fit Lab</div>
+  <div class="logo-chip">Osebni Kuhar</div>
   <h1 class="view-title">Koliko obrokov <em>na dan</em>?</h1>
   <p class="view-sub">Kalorije in beljakovine razdelim med obroke. Za vsakega ti predlagam recept, ki zadene tvoj cilj.</p>
 
@@ -3398,7 +3398,7 @@ const recipes = [
       "Dodaj 400ml vroče vode ali juhe, pokropi s soljo in poprom. Kuha se 18–20 minut na nizkem ognju — ne mešaj.",
       "Ko je voda vpita, vmešaj parmezan in daj pokrov na 2 minuti.",
     ],
-    tip: "Skuhaj dvakratno porcijo — jutri za kosilo v službo je rižota celo boljša kot svež.",
+    tip: "Skuhaj dvakratno porcijo — riž se v hladilniku drži 3 dni in je idealen za meal prep.",
     why: "59g beljakovin v enem loncu. Riž počasi sprosti energijo, piščanec pa nasiti. Ideal za meal prep — drži se 3 dni v hladilniku."
   },
   {
@@ -4368,7 +4368,7 @@ function generateShoppingText(cats, mealNames) {
     items.forEach(item => { text += `  • ${item}\n`; });
   });
   text += `\n${'─'.repeat(32)}\n`;
-  text += `Generirano z Osebni kuhar (Fit Lab)`;
+  text += `Generirano z Osebni Kuhar`;
   return text;
 }
 
@@ -5749,7 +5749,7 @@ initAuth();
 <div id="auth-overlay">
   <div id="auth-modal" role="dialog" aria-modal="true" aria-label="Prijava / Registracija">
     <button class="auth-close" onclick="closeAuthModal()" aria-label="Zapri">×</button>
-    <h2 class="auth-title">Dobrodošel v Fit Lab</h2>
+    <h2 class="auth-title">Dobrodošel v Osebni Kuhar</h2>
     <p class="auth-subtitle">Shrani svoj plan in odkleni vse recepte.</p>
 
     <div class="auth-tabs">
