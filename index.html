@@ -5308,9 +5308,9 @@ function renderRecipes(showAll) {
         lockOverlay.innerHTML = `
           <span class="lock-icon">🔒</span>
           <span class="lock-label">Prijavi se za dostop do vseh receptov</span>
-          <button class="lock-cta" onclick="event.stopPropagation();openAuthModal()">Prijava / Registracija</button>
+          <button class="lock-cta" onclick="event.stopPropagation();openAuthModal(() => openPaywall())">Prijava / Registracija</button>
         `;
-        card.onclick = () => openAuthModal();
+        card.onclick = () => openAuthModal(() => openPaywall());
       } else {
         // Prijavljen brez dostopa — pokaži nakup
         lockOverlay.innerHTML = `
