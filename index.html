@@ -2292,7 +2292,7 @@ async function startCheckout() {
   if (!AUTH.user) {
     // Ni prijavljen — odpri auth modal najprej
     closePaywall();
-    openAuthModal();
+    openAuthModal(() => startCheckout());
     return;
   }
 
