@@ -2508,15 +2508,17 @@ async function initAuth() {
       // Re-renderiraj recepte z pravilnim AUTH.user stanjem (odkleni kartice)
       renderRecipesIfVisible();
     } else {
-      // Ni veljavne seje — vrni na view-1, ne glede na localStorage
+      // Ni veljavne seje — vrni na view-1, razen če je ML bypass aktiven
       AUTH.user = null;
-      showView(1);
+      if (!window._mlEntry) showView(1);
+      else console.log('[ML] initAuth else-branch — showView(1) blokiran');
       renderRecipesIfVisible();
     }
   } catch(e) {
-    // Ob napaki (offline, etc.) — vrni na view-1
+    // Ob napaki (offline, etc.) — vrni na view-1, razen če je ML bypass aktiven
     AUTH.user = null;
-    showView(1);
+    if (!window._mlEntry) showView(1);
+    else console.log('[ML] initAuth catch-branch — showView(1) blokiran');
     renderRecipesIfVisible();
   }
 
@@ -5671,6 +5673,34 @@ document.addEventListener('keydown', function(e) {
 // ============================================================
 // INIT
 // ============================================================
+
+// MailerLite lead magnet bypass — ?src=ml preskoči onboarding
+(function handleLeadMagnetEntry() {
+  const p = new URLSearchParams(window.location.search);
+  console.log('[ML] src param:', p.get('src'));
+  if (p.get('src') !== 'ml') return;
+  console.log('[ML] bypass aktiven — nalagam testne podatke');
+  // Testni podatki (zamenjati z URL parametri v produkciji)
+  const age    = parseInt(p.get('age'))      || 30;
+  const height = parseInt(p.get('height'))   || 178;
+  const weight = parseInt(p.get('weight'))   || 82;
+  const gender = p.get('sex') === 'f' ? 'f' : 'm';
+  const activity = parseFloat(p.get('activity')) || 1.375;
+  const goal   = ['loss','maintain','gain'].includes(p.get('goal')) ? p.get('goal') : 'maintain';
+  // Izračun — enaka logika kot calculateTDEE()
+  const bmr = gender === 'm'
+    ? (10*weight) + (6.25*height) - (5*age) + 5
+    : (10*weight) + (6.25*height) - (5*age) - 161;
+  const offsets = { loss: -300, maintain: 0, gain: 250 };
+  const dailyKcal = Math.max(gender === 'm' ? 1500 : 1200, Math.round(bmr * activity + (offsets[goal] || 0)));
+  const dailyProt = Math.min(160, Math.round(weight * 2.0));
+  Object.assign(tdeeState, { gender, age, height, weight, activityFactor: activity, goal, dailyKcal, dailyProt });
+  // Počisti URL in pojdi direktno na recepte
+  window._mlEntry = true; // flag — initAuth() naj ne prepiše view-a
+  window.history.replaceState({}, '', window.location.pathname);
+  goDirectToRecipes();
+})();
+
 if (!restoreState()) {
   renderRecipes();
 }
