@@ -2535,15 +2535,7 @@ async function initAuth() {
   });
 }
 
-// Close auth overlay on background click
-document.addEventListener('click', (e) => {
-  const overlay = document.getElementById('auth-overlay');
-  if (e.target === overlay) closeAuthModal();
-});
-// Close on Escape
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeAuthModal();
-});
+// Auth modal se zapre samo z X gumbom ali uspešno prijavo (ne ob kliku zunaj)
 
 const recipes = [
   {
@@ -5700,6 +5692,7 @@ initAuth();
     }, 1500);
   } else if (payment === 'cancelled') {
     showToast('Plačilo preklicano.');
+    setTimeout(() => openPaywall(), 300);
   }
 })();
 
