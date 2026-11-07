@@ -2222,10 +2222,8 @@ const SUPABASE_ANON_KEY = 'sb_publishable_9Hx3lCUuFu87vxRXlUS4lg_C9y02cPA';
 // Supabase UMD v2 eksportira window.supabase = { createClient, ... }
 const _supabaseLib = window.supabase || {};
 const _createClient = _supabaseLib.createClient;
-console.log('[Auth] supabase lib:', typeof _supabaseLib, '| createClient:', typeof _createClient, '| URL:', SUPABASE_URL);
 if (!_createClient) throw new Error('Supabase CDN se ni naložil — preveri network tab');
 const _sb = _createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-console.log('[Auth] client exists:', !!_sb, '| auth exists:', !!_sb?.auth, '| endpoint:', SUPABASE_URL + '/auth/v1/signup');
 
 // Free-tier recipe IDs (accessible without login)
 const FREE_RECIPE_IDS = new Set([2, 10, 14, 23, 6]);
@@ -2331,7 +2329,6 @@ window.startCheckout = startCheckout;
 
 // Resetiraj checkout gumb ob vrnitvi iz Stripe z Back gumbom (bfcache restore)
 window.addEventListener('pageshow', (e) => {
-  console.log('[pageshow]', e.persisted);
   if (e.persisted) {
     const btn = document.querySelector('.paywall-cta');
     if (btn) { btn.disabled = false; btn.textContent = 'Odkleni dostop →'; }
@@ -2366,8 +2363,6 @@ async function handleAuthSubmit() {
     if (AUTH._currentTab === 'login') {
       result = await _sb.auth.signInWithPassword({ email, password });
     } else {
-      console.log('[Auth] signUp → href:', window.location.href, '| protocol:', window.location.protocol);
-      console.log('[Auth] _sb.auth:', typeof _sb.auth, '| signUp fn:', typeof _sb.auth?.signUp);
       result = await _sb.auth.signUp({ email, password, options: { emailRedirectTo: 'https://zigagrojzdek.github.io/osebni-kuhar/' } });
       if (!result.error && result.data?.user && !result.data.session) {
         showAuthMsg('Preveri e-pošto in potrdi račun.', 'success');
@@ -2427,10 +2422,9 @@ function renderRecipesIfVisible() {
 }
 
 async function syncProfile() {
-  if (!AUTH.user) { console.log('[syncProfile] skip — no user'); return; }
+  if (!AUTH.user) { return; }
   try {
     const s = typeof tdeeState !== 'undefined' ? tdeeState : {};
-    console.log('[syncProfile] tdeeState:', JSON.stringify(s));
     const payload = {
       id: AUTH.user.id,
       email: AUTH.user.email,
@@ -2443,9 +2437,7 @@ async function syncProfile() {
     if (s.activityFactor)  payload.activity_factor = s.activityFactor;
     if (s.dailyKcal)       payload.daily_kcal      = Math.round(s.dailyKcal);
     if (s.dailyProt)       payload.daily_prot      = Math.round(s.dailyProt);
-    console.log('[syncProfile] payload:', JSON.stringify(payload));
     const { data, error } = await _sb.from('profiles').upsert(payload, { onConflict: 'id' });
-    console.log('[syncProfile] result → data:', data, '| error:', error);
   } catch(e) {
     console.error('[syncProfile] catch:', e);
   }
