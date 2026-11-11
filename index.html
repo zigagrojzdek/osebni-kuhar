@@ -5727,8 +5727,10 @@ document.addEventListener('keydown', function(e) {
   }
 })();
 
-if (!restoreState()) {
+if (!window._mlEntry && !restoreState()) {
   renderRecipes();
+} else if (window._mlEntry) {
+  console.log('[ML] initial renderRecipes skipped');
 }
 initAuth();
 
