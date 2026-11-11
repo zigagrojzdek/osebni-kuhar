@@ -3895,8 +3895,16 @@ function startMealFlow() {
   usedRecipeIds = new Set();
   currentMealIdx = 0;
   saveState();
-  activateMeal(0);
+  console.log('[FLOW] before activateMeal(0)');
+  try { activateMeal(0); } catch(e) { console.error('[FLOW] activateMeal ERROR', e); }
+  console.log('[FLOW] before showView(3)');
   showView(3);
+  console.log('[FLOW END]', {
+    activeView: document.querySelector('.view.active')?.id,
+    guidedMode,
+    mealPlanLength: mealPlan?.length,
+    mealChosen
+  });
 }
 
 function startMealFlowAt(idx) {
