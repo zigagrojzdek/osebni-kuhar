@@ -2510,17 +2510,32 @@ async function initAuth() {
       // Re-renderiraj recepte z pravilnim AUTH.user stanjem (odkleni kartice)
       renderRecipesIfVisible();
     } else {
-      // Ni veljavne seje — vrni na view-1, razen če je ML bypass aktiven
+      // Ni veljavne seje — obnovi localStorage plan ali onboarding
       AUTH.user = null;
-      if (!window._mlEntry) showView(1);
-      else console.log('[ML] initAuth else-branch — showView(1) blokiran');
+      if (window._mlEntry) {
+        console.log('[ML] initAuth else-branch — showView(1) blokiran');
+      } else if (mealPlan && mealPlan.length > 0 && tdeeState.dailyKcal) {
+        // Veljavno stanje v localStorage — obnovi plan
+        console.log('[STATE] restored after refresh');
+        _navigateFromState();
+      } else {
+        console.log('[STATE] no saved plan');
+        showView(1);
+      }
       renderRecipesIfVisible();
     }
   } catch(e) {
-    // Ob napaki (offline, etc.) — vrni na view-1, razen če je ML bypass aktiven
+    // Ob napaki (offline, etc.) — obnovi localStorage plan ali onboarding
     AUTH.user = null;
-    if (!window._mlEntry) showView(1);
-    else console.log('[ML] initAuth catch-branch — showView(1) blokiran');
+    if (window._mlEntry) {
+      console.log('[ML] initAuth catch-branch — showView(1) blokiran');
+    } else if (mealPlan && mealPlan.length > 0 && tdeeState.dailyKcal) {
+      console.log('[STATE] restored after refresh');
+      _navigateFromState();
+    } else {
+      console.log('[STATE] no saved plan');
+      showView(1);
+    }
     renderRecipesIfVisible();
   }
 
