@@ -2415,8 +2415,11 @@ function requireAuth(callback) {
 }
 
 function renderRecipesIfVisible() {
-  console.log('[ML] renderRecipesIfVisible check', window._mlEntry);
   if (window._mlEntry) { console.log('[ML] renderRecipesIfVisible blocked'); return; }
+  if (guidedMode && mealPlan && mealPlan.length > 0 && tdeeState.dailyKcal) {
+    console.log('[STATE] renderRecipesIfVisible blocked - active meal plan');
+    return;
+  }
   const v3 = document.getElementById('view-3');
   if (v3 && v3.classList.contains('active')) {
     if (typeof renderRecipes === 'function') renderRecipes(false);
