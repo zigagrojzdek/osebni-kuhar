@@ -5696,19 +5696,29 @@ document.addEventListener('keydown', function(e) {
   const dailyProt = Math.min(160, Math.round(weight * 2.0));
   Object.assign(tdeeState, { gender, age, height, weight, activityFactor: activity, goal, dailyKcal, dailyProt });
   window._mlEntry = true; // flag — initAuth() naj ne prepiše view-a
-  window.history.replaceState({}, '', window.location.pathname);
-  // Zgradi mealPlan — selectMealCount zahteva DOM element, podamo dummy
   const meals = parseInt(p.get('meals')) || 3;
-  const mealCards = document.querySelectorAll('.meal-count-card');
-  console.log('[ML] mealCards found:', mealCards.length, '| meals param:', meals);
-  const targetCard = mealCards[meals - 3] || mealCards[0] || document.createElement('div');
-  console.log('[ML] targetCard:', targetCard.className || 'no class (fallback div)');
-  console.log('[ML] before selectMealCount');
-  selectMealCount(meals, targetCard);
-  console.log('[ML] after selectMealCount | mealPlan.length:', typeof mealPlan !== 'undefined' ? mealPlan.length : 'UNDEFINED');
-  console.log('[ML] before startMealFlow');
-  startMealFlow();
-  console.log('[ML] after startMealFlow');
+  window.history.replaceState({}, '', window.location.pathname);
+  // Zgradi mealPlan po DOMContentLoaded (DOM mora biti pripravljen)
+  function _mlStartFlow() {
+    try {
+      const mealCards = document.querySelectorAll('.meal-count-card');
+      console.log('[ML] mealCards found:', mealCards.length, '| meals param:', meals);
+      const targetCard = mealCards[meals - 3] || mealCards[0] || document.createElement('div');
+      console.log('[ML] before selectMealCount');
+      selectMealCount(meals, targetCard);
+      console.log('[ML] after selectMealCount | mealPlan.length:', typeof mealPlan !== 'undefined' ? mealPlan.length : 'UNDEFINED');
+      console.log('[ML] before startMealFlow');
+      startMealFlow();
+      console.log('[ML] after startMealFlow');
+    } catch(err) {
+      console.error('[ML] ERROR v meal flow:', err);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _mlStartFlow);
+  } else {
+    _mlStartFlow();
+  }
 })();
 
 if (!restoreState()) {
