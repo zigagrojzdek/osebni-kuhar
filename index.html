@@ -3547,6 +3547,7 @@ let usedRecipeIds = new Set(); // IDs receptov že izbranih ta dan (za dedup)
 // VIEW SWITCHING
 // ============================================================
 function showView(n) {
+  console.log('[ML] showView(' + n + ')', new Error().stack.split('\n')[2].trim());
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + n).classList.add('active');
   window.scrollTo(0, 0);
@@ -5143,6 +5144,7 @@ function findRecipes() {
 }
 
 function renderRecipes(showAll) {
+  console.log('[ML] renderRecipes(showAll=' + showAll + ')', new Error().stack.split('\n')[2].trim());
   const grid = document.getElementById('recipes-grid');
   let filtered = currentFilter === 'vse' ? recipes :
     currentFilter === 'protein' ? recipes.filter(r => (r.base.prot * 4 / r.base.kcal * 100) >= 25) :
