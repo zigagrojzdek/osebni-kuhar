@@ -2415,11 +2415,8 @@ function requireAuth(callback) {
 }
 
 function renderRecipesIfVisible() {
-  if (window._mlEntry) { console.log('[ML] renderRecipesIfVisible blocked'); return; }
-  if (guidedMode && mealPlan && mealPlan.length > 0 && tdeeState.dailyKcal) {
-    console.log('[STATE] renderRecipesIfVisible blocked - active meal plan');
-    return;
-  }
+  if (window._mlEntry) return;
+  if (guidedMode && mealPlan && mealPlan.length > 0 && tdeeState.dailyKcal) return;
   const v3 = document.getElementById('view-3');
   if (v3 && v3.classList.contains('active')) {
     if (typeof renderRecipes === 'function') renderRecipes(false);
@@ -2516,13 +2513,10 @@ async function initAuth() {
       // Ni veljavne seje — obnovi localStorage plan ali onboarding
       AUTH.user = null;
       if (window._mlEntry) {
-        console.log('[ML] initAuth else-branch — showView(1) blokiran');
+        // ML bypass aktiven — ne prepiši view-a
       } else if (mealPlan && mealPlan.length > 0 && tdeeState.dailyKcal) {
-        // Veljavno stanje v localStorage — obnovi plan
-        console.log('[STATE] restored after refresh');
         _navigateFromState();
       } else {
-        console.log('[STATE] no saved plan');
         showView(1);
       }
       renderRecipesIfVisible();
@@ -2531,12 +2525,10 @@ async function initAuth() {
     // Ob napaki (offline, etc.) — obnovi localStorage plan ali onboarding
     AUTH.user = null;
     if (window._mlEntry) {
-      console.log('[ML] initAuth catch-branch — showView(1) blokiran');
+      // ML bypass aktiven — ne prepiši view-a
     } else if (mealPlan && mealPlan.length > 0 && tdeeState.dailyKcal) {
-      console.log('[STATE] restored after refresh');
       _navigateFromState();
     } else {
-      console.log('[STATE] no saved plan');
       showView(1);
     }
     renderRecipesIfVisible();
@@ -3567,7 +3559,6 @@ let usedRecipeIds = new Set(); // IDs receptov že izbranih ta dan (za dedup)
 // VIEW SWITCHING
 // ============================================================
 function showView(n) {
-  console.log('[ML] showView(' + n + ')', new Error().stack.split('\n')[2].trim());
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + n).classList.add('active');
   window.scrollTo(0, 0);
@@ -5172,7 +5163,6 @@ function findRecipes() {
 }
 
 function renderRecipes(showAll) {
-  console.log('[ML] renderRecipes(showAll=' + showAll + ')', new Error().stack.split('\n')[2].trim());
   const grid = document.getElementById('recipes-grid');
   let filtered = currentFilter === 'vse' ? recipes :
     currentFilter === 'protein' ? recipes.filter(r => (r.base.prot * 4 / r.base.kcal * 100) >= 25) :
@@ -5707,9 +5697,7 @@ document.addEventListener('keydown', function(e) {
 // MailerLite lead magnet bypass — ?src=ml preskoči onboarding
 (function handleLeadMagnetEntry() {
   const p = new URLSearchParams(window.location.search);
-  console.log('[ML] src param:', p.get('src'));
   if (p.get('src') !== 'ml') return;
-  console.log('[ML] bypass aktiven — nalagam testne podatke');
   // Testni podatki (zamenjati z URL parametri v produkciji)
   const age    = parseInt(p.get('age'))      || 30;
   const height = parseInt(p.get('height'))   || 178;
@@ -5727,19 +5715,12 @@ document.addEventListener('keydown', function(e) {
   Object.assign(tdeeState, { gender, age, height, weight, activityFactor: activity, goal, dailyKcal, dailyProt });
   window._mlEntry = true; // flag — initAuth() naj ne prepiše view-a
   try {
-    console.log('[ML] step 1 — _mlEntry set');
     const meals = parseInt(p.get('meals')) || 3;
-    console.log('[ML] step 2 — meals:', meals);
     window.history.replaceState({}, '', window.location.pathname);
-    console.log('[ML] step 3 — URL cleaned');
     const mealCards = document.querySelectorAll('.meal-count-card');
-    console.log('[ML] step 4 — mealCards.length:', mealCards.length);
     const targetCard = mealCards[meals - 3] || mealCards[0] || document.createElement('div');
-    console.log('[ML] step 5 — targetCard class:', targetCard.className || '(no class)');
     selectMealCount(meals, targetCard);
-    console.log('[ML] step 6 — after selectMealCount, mealPlan.length:', mealPlan.length);
     startMealFlow();
-    console.log('[ML] step 7 — after startMealFlow');
   } catch(err) {
     console.error('[ML] ERROR', err);
   }
@@ -5747,8 +5728,6 @@ document.addEventListener('keydown', function(e) {
 
 if (!window._mlEntry && !restoreState()) {
   renderRecipes();
-} else if (window._mlEntry) {
-  console.log('[ML] initial renderRecipes skipped');
 }
 initAuth();
 
