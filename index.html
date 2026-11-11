@@ -5695,10 +5695,20 @@ document.addEventListener('keydown', function(e) {
   const dailyKcal = Math.max(gender === 'm' ? 1500 : 1200, Math.round(bmr * activity + (offsets[goal] || 0)));
   const dailyProt = Math.min(160, Math.round(weight * 2.0));
   Object.assign(tdeeState, { gender, age, height, weight, activityFactor: activity, goal, dailyKcal, dailyProt });
-  // Počisti URL in pojdi direktno na recepte
   window._mlEntry = true; // flag — initAuth() naj ne prepiše view-a
   window.history.replaceState({}, '', window.location.pathname);
-  goDirectToRecipes();
+  // Zgradi mealPlan — selectMealCount zahteva DOM element, podamo dummy
+  const meals = parseInt(p.get('meals')) || 3;
+  const mealCards = document.querySelectorAll('.meal-count-card');
+  console.log('[ML] mealCards found:', mealCards.length, '| meals param:', meals);
+  const targetCard = mealCards[meals - 3] || mealCards[0] || document.createElement('div');
+  console.log('[ML] targetCard:', targetCard.className || 'no class (fallback div)');
+  console.log('[ML] before selectMealCount');
+  selectMealCount(meals, targetCard);
+  console.log('[ML] after selectMealCount | mealPlan.length:', typeof mealPlan !== 'undefined' ? mealPlan.length : 'UNDEFINED');
+  console.log('[ML] before startMealFlow');
+  startMealFlow();
+  console.log('[ML] after startMealFlow');
 })();
 
 if (!restoreState()) {
