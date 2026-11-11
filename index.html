@@ -2415,7 +2415,8 @@ function requireAuth(callback) {
 }
 
 function renderRecipesIfVisible() {
-  if (window._mlEntry) return; // ML bypass — ne prepiši guided view
+  console.log('[ML] renderRecipesIfVisible check', window._mlEntry);
+  if (window._mlEntry) { console.log('[ML] renderRecipesIfVisible blocked'); return; }
   const v3 = document.getElementById('view-3');
   if (v3 && v3.classList.contains('active')) {
     if (typeof renderRecipes === 'function') renderRecipes(false);
