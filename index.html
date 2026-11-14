@@ -2564,6 +2564,7 @@ async function initAuth() {
     } else if (event === 'SIGNED_OUT') {
       AUTH.user = null;
       AUTH.isPremium = false;
+      try { localStorage.removeItem(LS_KEY); } catch(e) {}
       updateAuthUI();
       renderRecipesIfVisible();
     }
@@ -5475,6 +5476,12 @@ function openAndSelect(id) {
 
 function openRecipe(id) {
   const recipe = recipes.find(r => r.id === id);
+  // Premium lock: preveri dostop pred odpiranjem
+  const isLocked = (!AUTH.user || !AUTH.isPremium) && !FREE_RECIPE_IDS.has(id);
+  if (isLocked) {
+    if (!AUTH.user) { openAuthModal(() => openPaywall()); } else { openPaywall(); }
+    return;
+  }
   openRecipeId = id;
   const scale = getScaleFactor(recipe);
   const targetKcal = targetMacros ? targetMacros.kcal : 0;
