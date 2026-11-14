@@ -4647,18 +4647,18 @@ function generatePDF() {
 
   // ── Palette ──────────────────────────────────────────────────────
   const C = {
-    hdrBg:   [18, 20, 24],      // near-black header
-    orange:  [235, 120, 40],    // primary accent
-    orangeD: [200, 95, 25],     // darker orange
+    hdrBg:   [11, 12, 9],       // --bg dark header
+    lime:    [200, 240, 96],    // --accent lime primary
+    limeD:   [160, 200, 60],    // darker lime
     white:   [255, 255, 255],
-    offW:    [248, 248, 250],
-    rule:    [225, 225, 230],
-    dark:    [30, 30, 35],
-    mid:     [100, 100, 110],
-    light:   [165, 165, 175],
-    stripBg: [240, 241, 245],
-    cardBg:  [252, 252, 254],
-    altBg:   [245, 245, 250],
+    offW:    [248, 248, 246],
+    rule:    [220, 220, 215],
+    dark:    [30, 30, 28],
+    mid:     [100, 100, 95],
+    light:   [160, 158, 150],
+    stripBg: [242, 242, 238],
+    cardBg:  [251, 251, 249],
+    altBg:   [244, 244, 240],
   };
 
   // ── Drawing helpers ──────────────────────────────────────────────
@@ -4737,7 +4737,7 @@ function generatePDF() {
   const ING_H   = 4.5;  // per ingredient row
   const MACRO_H = 11;   // per-meal macro strip
   const PAD_V   = 3.5;  // card vertical padding top
-  const PAD_B   = 7;    // card bottom padding — clears last ingredient + orange line
+  const PAD_B   = 7;    // card bottom padding — clears last ingredient + lime line
   const LBL_H   = 4.5;  // label row (01 • ZAJTRK)
   const TTL_H   = 6;    // title line height
   const CARD_GAP= 2.5;    // gap between cards
@@ -4770,8 +4770,8 @@ function generatePDF() {
   // HEADER — dark block
   // ════════════════════════════════════════════════════════════════
   R_(0, 0, PW, HDR_H, C.hdrBg);
-  // Orange top accent line
-  R_(0, 0, PW, 1.5, C.orange);
+  // Lime top accent line
+  R_(0, 0, PW, 1.5, C.lime);
 
   // Left: big goal text (no ONLINE COACHING label)
   F_('bold', 15, C.white);
@@ -4789,9 +4789,9 @@ function generatePDF() {
   F_('normal', 6, [120, 125, 135]);
   T_('DNEVNI CILJ', rightX + 4, 10.5);
 
-  F_('bold', 8.5, C.orange);
+  F_('bold', 8.5, C.lime);
   T_('Cilj: ' + String(totalKcal) + ' kcal', rightX + 4, 16.5);
-  F_('bold', 8.5, [200, 160, 80]);
+  F_('bold', 8.5, C.limeD);
   T_('Plan: ' + String(actualKcal) + ' kcal', rightX + 4, 22);
 
   F_('normal', 5.5, [160, 165, 175]);
@@ -4805,10 +4805,10 @@ function generatePDF() {
   L_(0, STRIP_Y + STRIP_H, PW, STRIP_Y + STRIP_H, C.rule, 0.4);
 
   const macros = [
-    { val: String(totalKcal), unit: 'kcal',  label: 'KALORIJE',      col: C.orange },
-    { val: String(totalProt),  unit: 'g',     label: 'BELJAKOVINE',   col: C.orange },
-    { val: String(totalCarbs), unit: 'g',     label: 'OGLJ. HIDRATI', col: C.orange },
-    { val: String(totalFat),   unit: 'g',     label: 'MAŠČOBE',       col: C.orange },
+    { val: String(totalKcal), unit: 'kcal',  label: 'KALORIJE',      col: C.lime },
+    { val: String(totalProt),  unit: 'g',     label: 'BELJAKOVINE',   col: C.lime },
+    { val: String(totalCarbs), unit: 'g',     label: 'OGLJ. HIDRATI', col: C.lime },
+    { val: String(totalFat),   unit: 'g',     label: 'MAŠČOBE',       col: C.lime },
   ];
   const mW = CW / 4;
   macros.forEach((m, i) => {
@@ -4837,24 +4837,24 @@ function generatePDF() {
     // Card background
     R_(ML, y, CW, ch, C.cardBg);
 
-    // Left orange accent bar
-    R_(ML, y, 2, ch, C.orange);
+    // Left lime accent bar
+    R_(ML, y, 2, ch, C.lime);
 
     let cy = y + PAD_V;
 
     // ── Header row: badge + label + kcal right ───────────────────
     // Number badge
     const badgeStr = String(card.idx).padStart(2, '0');
-    RR_(ML + 4, cy, 7, 4.5, 1, [235, 236, 240]);
-    F_('bold', 7, C.orange);
+    RR_(ML + 4, cy, 7, 4.5, 1, [230, 240, 210]);
+    F_('bold', 7, C.limeD);
     T_(badgeStr, ML + 4 + (7 - TW(badgeStr))/2, cy + 3.2);
 
     // Meal label
     F_('bold', 8, C.mid);
     T_(card.label.toUpperCase(), ML + 13, cy + 3.2);
 
-    // Kcal — right, orange, prominent
-    F_('bold', 11, C.orange);
+    // Kcal — right, lime, prominent
+    F_('bold', 11, C.limeD);
     const kcalStr = String(card.kcal) + ' kcal';
     T_(kcalStr, PW - MR - TW(kcalStr), cy + 3.8);
 
@@ -4884,12 +4884,12 @@ function generatePDF() {
     });
     cy += mstrip_h + 1.5;
 
-    // ── Ingredients — orange bullet dots ─────────────────────────
+    // ── Ingredients — lime bullet dots ───────────────────────────
     card.ings.forEach((ing) => {
       cy += ING_H;
 
-      // Orange bullet
-      doc.setFillColor(...C.orange);
+      // Lime bullet
+      doc.setFillColor(...C.limeD);
       doc.circle(ML + 5.5, cy - 1.3, 0.7, 'F');
 
       // Ingredient name
@@ -4905,7 +4905,7 @@ function generatePDF() {
       T_(qStr, PW - MR - TW(qStr), cy);
     });
 
-    // No bottom line — left orange bar only
+    // No bottom line — left lime bar only
 
     return y + ch;
   }
