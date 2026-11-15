@@ -1776,12 +1776,19 @@
   /* Locked recipe card overlay */
   .recipe-locked {
     position: absolute; inset: 0; border-radius: inherit;
-    background: rgba(12,12,11,.82); backdrop-filter: blur(3px);
+    background: linear-gradient(to bottom, rgba(12,12,11,0.18) 0%, rgba(12,12,11,0.72) 52%, rgba(12,12,11,0.95) 100%);
+    backdrop-filter: blur(1px);
     display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 10px;
+    align-items: center; justify-content: flex-end;
+    padding-bottom: 18px; gap: 7px;
     cursor: pointer; z-index: 2;
   }
-  .lock-icon { font-size: 22px; }
+  .lock-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(200,240,96,0.13); border: 0.5px solid rgba(200,240,96,0.3);
+    border-radius: 20px; padding: 3px 10px;
+    font-size: 11px; font-weight: 600; color: var(--accent); letter-spacing: 0.03em;
+  }
   .lock-label {
     font-size: 12px; color: var(--text2); text-align: center;
     padding: 0 16px; line-height: 1.4;
@@ -5429,23 +5436,13 @@ function renderRecipes(showAll) {
     if (isLocked) {
       const lockOverlay = document.createElement('div');
       lockOverlay.className = 'recipe-locked';
-      if (!AUTH.user) {
-        // Neprijavljen — pokaži prijavo
-        lockOverlay.innerHTML = `
-          <span class="lock-icon">🔒</span>
-          <span class="lock-label">Prijavi se za dostop do vseh receptov</span>
-          <button class="lock-cta" onclick="event.stopPropagation();openAuthModal(() => openPaywall())">Prijava / Registracija</button>
-        `;
-        card.onclick = () => openAuthModal(() => openPaywall());
-      } else {
-        // Prijavljen brez dostopa — pokaži nakup
-        lockOverlay.innerHTML = `
-          <span class="lock-icon">🔒</span>
-          <span class="lock-label">Ta recept je del premium paketa</span>
-          <button class="lock-cta" onclick="event.stopPropagation();openPaywall()">Odkleni dostop</button>
-        `;
-        card.onclick = () => openPaywall();
-      }
+      // Oba primera (neprijavljen in prijavljen brez dostopa) gredo direktno na paywall
+      lockOverlay.innerHTML = `
+        <span class="lock-badge">✦ Premium recept</span>
+        <span class="lock-label">35+ receptov z gramaturami za tvoj cilj</span>
+        <button class="lock-cta" onclick="event.stopPropagation();openPaywall()">Odkleni dostop</button>
+      `;
+      card.onclick = () => openPaywall();
       card.style.position = 'relative';
       card.appendChild(lockOverlay);
     } else {
@@ -5466,7 +5463,7 @@ function openRecipe(id) {
   // Premium lock: preveri dostop pred odpiranjem
   const isLocked = (!AUTH.user || !AUTH.isPremium) && !FREE_RECIPE_IDS.has(id);
   if (isLocked) {
-    if (!AUTH.user) { openAuthModal(() => openPaywall()); } else { openPaywall(); }
+    openPaywall();
     return;
   }
   openRecipeId = id;
