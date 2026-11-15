@@ -4643,31 +4643,32 @@ function generatePDF() {
   const F = 'LB';
 
   const PW = 210, PH = 297;
-  const ML = 18, MR = 18, CW = PW - ML - MR;  // širši margins za premium feel
+  const ML = 18, MR = 18, CW = PW - ML - MR;
 
-  // ── Brand palette — Osebni Kuhar dark brand ──────────────────────
+  // ── Palette ───────────────────────────────────────────────────────
   const C = {
-    bg:       [12, 12, 11],      // #0C0C0B — page background
-    surface:  [22, 22, 20],      // #161614 — card surface
-    surface2: [30, 30, 27],      // slightly lighter surface
-    lime:     [200, 240, 96],    // #C8F060 — accent
-    limeText: [172, 210, 70],    // lime za tekst (readable)
-    limeDim:  [120, 160, 40],    // lime muted
-    text:     [240, 237, 230],   // #F0EDE6 — primary text
-    muted:    [120, 118, 110],   // #78766E — muted text
-    dim:      [65, 63, 58],      // very muted — labels
-    rule:     [38, 38, 34],      // subtle dark rule
-    ruleHvy:  [55, 55, 50],      // heavier rule
+    bg:      [12, 12, 11],      // #0C0C0B
+    surf:    [22, 22, 20],      // #161614 — kartice
+    surf2:   [26, 26, 23],      // makro strip v kartici
+    lime:    [200, 240, 96],    // #C8F060
+    limeT:   [106, 132, 40],    // lime za tekst na dark
+    limeD:   [74, 88, 28],      // lime zelo muted
+    text:    [240, 237, 230],   // #F0EDE6
+    textD:   [192, 189, 182],   // text muted
+    muted:   [85, 83, 78],      // #55534e
+    dim:     [53, 53, 48],      // #353530
+    rule:    [37, 37, 32],      // #252520
+    ruleH:   [46, 46, 40],      // heavier rule
   };
 
-  // ── Helpers ──────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────
   const F_ = (sty, sz, col) => { doc.setFont(F, sty); doc.setFontSize(sz); if (col) doc.setTextColor(...col); };
   const T_  = (s, x, y, o) => doc.text(s, x, y, o||{});
   const R_  = (x, y, w, h, col) => { doc.setFillColor(...col); doc.rect(x, y, w, h, 'F'); };
   const L_  = (x1,y1,x2,y2,col,lw) => { doc.setDrawColor(...(col||C.rule)); doc.setLineWidth(lw||0.2); doc.line(x1,y1,x2,y2); };
   const TW  = s => doc.getTextWidth(s);
 
-  // ── State ────────────────────────────────────────────────────────
+  // ── State ─────────────────────────────────────────────────────────
   const GOALS = { loss: 'HUJŠANJE', maintain: 'VZDRŽEVANJE', gain: 'GRADNJA MIŠIC' };
   const goalStr   = GOALS[tdeeState.goal] || 'PREHRANSKI PLAN';
   const totalKcal = tdeeState.dailyKcal;
@@ -4679,7 +4680,7 @@ function generatePDF() {
   });
   totalCarbs = Math.round(totalCarbs); totalFat = Math.round(totalFat); actualKcal = Math.round(actualKcal);
 
-  // ── Build cards ──────────────────────────────────────────────────
+  // ── Build cards ───────────────────────────────────────────────────
   const savedTM = targetMacros ? { ...targetMacros } : null;
   const cards = [];
   mealPlan.forEach((meal, mi) => {
@@ -4708,209 +4709,171 @@ function generatePDF() {
   targetMacros = savedTM;
 
   // ════════════════════════════════════════════════════════════════
-  // PAGE SETUP
+  // LAYOUT
   // ════════════════════════════════════════════════════════════════
-  let pageNum = 1;
-  const FOOT_H   = 18;
+  const HDR_H    = 46;   // ~50mm — tesnejši, brez mrtvega prostora
+  const MSTRIP_H = 20;   // makro strip pod headerjem
+  const ING_H    = 5.8;  // sestavina
+  const CARD_GAP = 5;    // razmak med karticami
+  const CPL      = 7;    // card padding left (od lime bara)
+  const FOOT_H   = 16;
   const BODY_BTM = PH - FOOT_H;
 
-  // ING spacing
-  const ING_H    = 5.8;
-  // Card internals
-  const CARD_PAD_LEFT = 7;   // levi padding znotraj kartice
-  const CARD_GAP      = 6;   // razmak med karticami — dih
-
-  function initPage() {
-    R_(0, 0, PW, PH, C.bg);
+  function cardHeight(card) {
+    F_('bold', 14);
+    const tl = doc.splitTextToSize(card.title, CW - CPL - 6);
+    // title + meta + macroRow(13) + ings + padding
+    return 5 + tl.length * 8 + 5 + 13 + 3 + card.ings.length * ING_H + 6;
   }
 
+  let pageNum = 1;
+
+  function initPage() { R_(0, 0, PW, PH, C.bg); }
+
   function drawFooter(pn, total) {
-    // Tanká lime linija čez celo stran
-    R_(0, PH - FOOT_H, PW, 0.4, C.lime);
+    R_(0, PH - FOOT_H, PW, 0.5, C.lime);
     F_('bold', 7, C.muted);
     T_('OSEBNI KUHAR', ML, PH - FOOT_H + 7);
-    F_('normal', 6.5, C.dim);
-    T_('Tvoj plan. Tvoje kalorije. Tvoje količine.', ML, PH - FOOT_H + 13);
+    F_('normal', 6, C.dim);
+    T_('Tvoj plan. Tvoje kalorije. Tvoje količine.', ML, PH - FOOT_H + 12.5);
     F_('normal', 6, C.dim);
     const pg = pn + ' / ' + total;
-    T_(pg, PW - MR - TW(pg), PH - FOOT_H + 10);
+    T_(pg, PW - MR - TW(pg), PH - FOOT_H + 9.5);
   }
 
   initPage();
 
   // ════════════════════════════════════════════════════════════════
-  // HEADER — polno dark, velik tipografski fokus
+  // HEADER
   // ════════════════════════════════════════════════════════════════
-  const HDR_H = 68;
   R_(0, 0, PW, HDR_H, C.bg);
+  R_(0, HDR_H, PW, 0.5, C.lime);  // spodnji lime rob
 
-  // Tanká lime linija — spodnji rob headerja
-  R_(0, HDR_H, PW, 0.5, C.lime);
-
-  // Brand wordmark — drobno, zgoraj levo
-  F_('bold', 7, C.limeDim);
-  T_('OSEBNI KUHAR', ML, 13);
-
-  // "TVOJ PREHRANSKI PLAN" — subtitle
-  F_('normal', 8, C.muted);
-  T_('TVOJ PREHRANSKI PLAN', ML, 24);
-
-  // Thin rule pod subtitle
-  L_(ML, 27, ML + 60, 27, C.rule, 0.3);
-
-  // Cilj — dominantna tipografija
-  F_('bold', 28, C.text);
-  T_(goalStr, ML, 46);
-
-  // Datum — drobno, pod ciljem
+  // Levo
+  F_('bold', 7, C.limeD);
+  T_('OSEBNI KUHAR', ML, 10);
+  F_('normal', 7.5, C.dim);
+  T_('TVOJ PREHRANSKI PLAN', ML, 18);
+  F_('bold', 24, C.text);
+  T_(goalStr, ML, 36);
   const dateStr = new Date().toLocaleDateString('sl-SI', { day: 'numeric', month: 'long', year: 'numeric' });
-  F_('normal', 7, C.dim);
-  T_(dateStr, ML, 56);
+  F_('normal', 6.5, C.dim);
+  T_(dateStr, ML, 43);
 
-  // ── Desno: kcal + prot — velik vizualni poudarek ─────────────────
-  // Kcal blok
-  const kcalX = PW - MR - 72;
-  F_('normal', 6.5, C.muted);
-  T_('DNEVNE KALORIJE', kcalX, 18);
-  F_('bold', 32, C.text);
-  T_(String(totalKcal), kcalX, 38);
-  F_('normal', 9, C.muted);
-  T_('kcal', kcalX + TW(String(totalKcal)) + 2, 38);
+  // Desno — kcal + prot, velik tipografski poudarek
+  const rBase = 42; // baseline y za številki
+  // Kcal
+  const kcalStr = String(totalKcal);
+  const kcalLblX = PW - MR - 76;
+  F_('normal', 6, C.muted);
+  T_('DNEVNE KALORIJE', kcalLblX, 15);
+  F_('bold', 26, C.text);
+  T_(kcalStr, kcalLblX, rBase);
+  F_('normal', 8, C.muted);
+  T_(' kcal', kcalLblX + TW(kcalStr), rBase);
 
-  // Prot blok — lime, desno od kcal
-  const protX = PW - MR - 30;
-  F_('normal', 6.5, C.limeText);
-  T_('BELJAKOVINE', protX - TW('BELJAKOVINE'), 18);
-  F_('bold', 32, C.lime);
-  T_(String(totalProt), protX - TW(String(totalProt)), 38);
-  F_('normal', 9, C.limeText);
-  T_('g', PW - MR - TW('g'), 38);
+  // Prot — lime
+  const protStr = String(totalProt);
+  const protLblX = PW - MR - 28;
+  F_('normal', 6, C.limeT);
+  T_('BELJAKOVINE', protLblX - TW('BELJAKOVINE'), 15);
+  F_('bold', 26, C.lime);
+  T_(protStr, protLblX - TW(protStr), rBase);
+  F_('normal', 8, C.limeT);
+  T_(' g', protLblX, rBase);
 
   // ════════════════════════════════════════════════════════════════
-  // MAKRO CARDS SEKCIJA — 4 premium tiles
+  // MAKRO STRIP — 4 kolone, inline pod headerjem
   // ════════════════════════════════════════════════════════════════
-  const MACRO_SEC_Y = HDR_H + 10;
-  const TILE_H = 28;
-  const TILE_GAP = 4;
-  const TILE_W = (CW - 3 * TILE_GAP) / 4;
+  const MSY = HDR_H + 0.5;  // tik pod lime linijo
+  R_(0, MSY, PW, MSTRIP_H, C.bg);
+  R_(0, MSY + MSTRIP_H, PW, 0.4, C.ruleH);
 
-  const macroTiles = [
-    { label: 'KALORIJE',          val: String(actualKcal), unit: 'kcal', lime: false },
-    { label: 'BELJAKOVINE',       val: String(totalProt),  unit: 'g',    lime: true  },
-    { label: 'OGLJIKOVI HIDRATI', val: String(totalCarbs), unit: 'g',    lime: false },
-    { label: 'MAŠČOBE',           val: String(totalFat),   unit: 'g',    lime: false },
+  const msCols = [
+    { lbl: 'SKUPNE KALORIJE',  val: String(actualKcal), unit: 'kcal', lime: false, valSz: 14 },
+    { lbl: 'BELJAKOVINE',      val: String(totalProt),  unit: 'g',    lime: true,  valSz: 16 },
+    { lbl: 'OGLJIKOVI HIDRATI', val: String(totalCarbs), unit: 'g',    lime: false, valSz: 12 },
+    { lbl: 'MAŠČOBE',          val: String(totalFat),   unit: 'g',    lime: false, valSz: 12 },
   ];
-
-  macroTiles.forEach((tile, i) => {
-    const tx = ML + i * (TILE_W + TILE_GAP);
-    // Tile ozadje
-    R_(tx, MACRO_SEC_Y, TILE_W, TILE_H, C.surface);
-    // Lime top border za prot tile, sicer dim
-    R_(tx, MACRO_SEC_Y, TILE_W, 0.6, tile.lime ? C.lime : C.ruleHvy);
-
-    // Label — zgoraj
-    F_('normal', 5.5, tile.lime ? C.limeDim : C.dim);
-    T_(tile.label, tx + 5, MACRO_SEC_Y + 8);
-
-    // Vrednost — dominantna številka
-    F_('bold', tile.lime ? 20 : 18, tile.lime ? C.lime : C.text);
-    T_(tile.val, tx + 5, MACRO_SEC_Y + 21);
-
-    // Enota — desno od vrednosti, ista višina
-    F_('normal', 7, tile.lime ? C.limeText : C.muted);
-    T_(tile.unit, tx + 5 + TW(tile.val) + 1.5, MACRO_SEC_Y + 21);
+  const msW = CW / 4;
+  msCols.forEach((col, i) => {
+    const cx = ML + i * msW;
+    // Lime top border samo za beljakovine
+    if (col.lime) R_(cx, MSY, msW, 1.5, C.lime);
+    // Vertikalna ločilnica
+    if (i > 0) L_(cx, MSY + 4, cx, MSY + MSTRIP_H - 3, C.rule, 0.2);
+    // Label
+    F_('normal', 5.5, col.lime ? C.limeT : C.dim);
+    T_(col.lbl, cx + 4, MSY + 7);
+    // Vrednost
+    F_('bold', col.valSz, col.lime ? C.lime : (i < 2 ? C.textD : C.muted));
+    T_(col.val, cx + 4, MSY + 17);
+    // Enota
+    F_('normal', 7, col.lime ? C.limeT : C.dim);
+    T_(col.unit, cx + 4 + TW(col.val) + 1, MSY + 17);
   });
-
-  // Spodnja ločilna linija sekcije
-  L_(ML, MACRO_SEC_Y + TILE_H + 8, ML + CW, MACRO_SEC_Y + TILE_H + 8, C.ruleHvy, 0.3);
 
   // ════════════════════════════════════════════════════════════════
   // MEAL CARDS
   // ════════════════════════════════════════════════════════════════
-  let y = MACRO_SEC_Y + TILE_H + 16;
-
-  function cardHeight(card) {
-    F_('bold', 15);
-    const tl = doc.splitTextToSize(card.title, CW - CARD_PAD_LEFT - 4);
-    // label(6) + gap(4) + rule(2) + title(tl*8) + gap(5) + macroRow(16) + rule(1) + gap(4) + ings + pad(7)
-    return 6 + 4 + 2 + tl.length * 8.5 + 5 + 16 + 1 + 4 + card.ings.length * ING_H + 7;
-  }
+  let y = MSY + MSTRIP_H + 6;
 
   function drawCard(card, y) {
-    F_('bold', 15);
-    const tlines = doc.splitTextToSize(card.title, CW - CARD_PAD_LEFT - 4);
+    F_('bold', 14);
+    const tlines = doc.splitTextToSize(card.title, CW - CPL - 6);
     const ch = cardHeight(card);
 
-    // Card surface — dark
-    R_(ML, y, CW, ch, C.surface);
+    R_(ML, y, CW, ch, C.surf);
+    R_(ML, y, 2.5, ch, C.lime);  // leva lime bar
 
-    // Leva lime accent bar — slim, premium
-    R_(ML, y, 2, ch, C.lime);
+    let cy = y + 5;
 
-    let cy = y + 6;
+    // 1. Naslov recepta — dominanten
+    F_('bold', 14, C.text);
+    T_(tlines, ML + CPL, cy);
+    cy += tlines.length * 8 + 5;
 
-    // ── Obrok label levo + kcal desno ────────────────────────────
-    F_('normal', 6.5, C.dim);
-    T_(String(card.idx).padStart(2,'0') + '  ·  ' + card.label.toUpperCase(), ML + CARD_PAD_LEFT, cy);
+    // 2. Meta: obrok label + kcal
+    F_('normal', 7, C.dim);
+    T_(String(card.idx).padStart(2,'0') + ' · ' + card.label.toUpperCase(), ML + CPL, cy);
+    F_('bold', 11, C.muted);
+    const kTxt = String(card.kcal) + ' kcal';
+    T_(kTxt, ML + CW - TW(kTxt) - 3, cy);
+    cy += 3;
 
-    F_('bold', 13, C.text);
-    const kcalTxt = String(card.kcal) + ' kcal';
-    T_(kcalTxt, ML + CW - TW(kcalTxt) - 4, cy);
+    // Ločilna linija
+    L_(ML + CPL, cy, ML + CW - 3, cy, C.rule, 0.2);
+    cy += 1;
 
-    cy += 4;
-
-    // Tanká ločilna linija
-    L_(ML + CARD_PAD_LEFT, cy, ML + CW - 4, cy, C.rule, 0.2);
-    cy += 4;
-
-    // ── Naslov recepta ────────────────────────────────────────────
-    F_('bold', 15, C.text);
-    T_(tlines, ML + CARD_PAD_LEFT, cy);
-    cy += tlines.length * 8.5 + 5;
-
-    // ── Makro vrstica — 3 vrednosti inline ───────────────────────
-    // Ozadje
-    R_(ML + CARD_PAD_LEFT, cy - 1, CW - CARD_PAD_LEFT - 2, 16, C.surface2);
-    // Lime leva oznaka za prot
-    R_(ML + CARD_PAD_LEFT, cy - 1, 1.5, 16, C.lime);
-
+    // 3. Makro vrstica
+    R_(ML + CPL, cy, CW - CPL - 1, 13, C.surf2);
+    const mcW = (CW - CPL - 1) / 3;
     const mcItems = [
       { lbl: 'BELJAKOVINE', val: String(card.prot)  + ' g', lime: true },
       { lbl: 'OH',          val: String(card.carbs) + ' g', lime: false },
       { lbl: 'MAŠČOBE',     val: String(card.fat)   + ' g', lime: false },
     ];
-    const mcW = (CW - CARD_PAD_LEFT - 2) / 3;
     mcItems.forEach((mc, mi) => {
-      const mcx = ML + CARD_PAD_LEFT + mi * mcW;
-      if (mi > 0) L_(mcx, cy, mcx, cy + 14, C.rule, 0.2);
-      F_('bold', 11, mc.lime ? C.lime : C.text);
-      T_(mc.val, mcx + 6, cy + 8);
-      F_('normal', 5.5, mc.lime ? C.limeText : C.muted);
-      T_(mc.lbl, mcx + 6, cy + 13);
+      const mcx = ML + CPL + mi * mcW;
+      if (mi > 0) L_(mcx, cy + 1.5, mcx, cy + 11, C.rule, 0.2);
+      F_('bold', 10.5, mc.lime ? C.lime : C.textD);
+      T_(mc.val, mcx + 5, cy + 7.5);
+      F_('normal', 5.5, mc.lime ? C.limeT : C.dim);
+      T_(mc.lbl, mcx + 5, cy + 11.5);
     });
-    cy += 17;
+    cy += 15;
 
-    // Ločilna linija sestavine / makri
-    L_(ML + CARD_PAD_LEFT, cy, ML + CW - 4, cy, C.rule, 0.2);
-    cy += 4;
-
-    // ── Sestavine ─────────────────────────────────────────────────
+    // 4. Sestavine
     card.ings.forEach((ing) => {
-      // Slim lime bullet
       doc.setFillColor(...C.lime);
-      doc.circle(ML + CARD_PAD_LEFT + 2, cy - 1.2, 0.8, 'F');
-
-      F_('normal', 8.5, C.text);
+      doc.circle(ML + CPL + 2, cy - 1, 0.9, 'F');
+      F_('normal', 9, C.textD);
       let nm = ing.name;
-      const maxNW = CW - CARD_PAD_LEFT - 28;
-      while (nm.length > 1 && TW(nm) > maxNW) nm = nm.slice(0, -1);
-      T_(nm, ML + CARD_PAD_LEFT + 6, cy);
-
-      // Količina desno — muted
-      F_('normal', 8.5, C.muted);
+      while (nm.length > 1 && TW(nm) > CW - CPL - 26) nm = nm.slice(0, -1);
+      T_(nm, ML + CPL + 6, cy);
+      F_('normal', 9, C.muted);
       const qTxt = ing.qty + ' ' + ing.unit;
-      T_(qTxt, ML + CW - TW(qTxt) - 4, cy);
-
+      T_(qTxt, ML + CW - TW(qTxt) - 3, cy);
       cy += ING_H;
     });
 
@@ -4921,7 +4884,7 @@ function generatePDF() {
     const ch = cardHeight(card);
     if (y + ch > BODY_BTM) {
       drawFooter(pageNum, '?');
-      doc.addPage(); pageNum++; initPage(); y = 14;
+      doc.addPage(); pageNum++; initPage(); y = 12;
     }
     y = drawCard(card, y);
     y += CARD_GAP;
