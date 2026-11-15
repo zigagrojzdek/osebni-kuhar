@@ -1710,7 +1710,7 @@
   #auth-overlay {
     display: none; position: fixed; inset: 0;
     background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
-    z-index: 1000; align-items: center; justify-content: center;
+    z-index: 1100; align-items: center; justify-content: center;
   }
   #auth-overlay.open { display: flex; }
 
@@ -2277,8 +2277,15 @@ async function signOut() {
 }
 window.signOut = signOut;
 
-function openAuthModal(callback) {
+function openAuthModal(callback, opts) {
   if (callback) AUTH._pendingCallback = callback;
+  AUTH._checkoutContext = !!(opts && opts.context === 'checkout');
+  const subtitle = document.querySelector('#auth-modal .auth-subtitle');
+  if (subtitle) {
+    subtitle.textContent = AUTH._checkoutContext
+      ? 'Prijavi se ali ustvari račun za nadaljevanje nakupa.'
+      : 'Shrani svoj plan in odkleni vse recepte.';
+  }
   document.getElementById('auth-overlay').classList.add('open');
   setTimeout(() => document.getElementById('auth-email').focus(), 100);
 }
@@ -2287,6 +2294,7 @@ function closeAuthModal() {
   document.getElementById('auth-overlay').classList.remove('open');
   document.getElementById('auth-msg').textContent = '';
   AUTH._pendingCallback = null;
+  AUTH._checkoutContext = false;
 }
 
 function openPaywall() {
@@ -2296,9 +2304,8 @@ window.openPaywall = openPaywall;
 
 async function startCheckout() {
   if (!AUTH.user) {
-    // Ni prijavljen — odpri auth modal najprej
-    closePaywall();
-    openAuthModal(() => startCheckout());
+    // Ni prijavljen — odpri auth modal, paywall ostane v ozadju za kontekst
+    openAuthModal(() => startCheckout(), { context: 'checkout' });
     return;
   }
 
@@ -2407,18 +2414,27 @@ async function handleAuthSubmit() {
         showAuthMsg(errMap[result.error.message] || result.error.message, 'error');
       } else if (result.data?.user && !result.data.session) {
         // Supabase zahteva email verifikacijo — seja še ni aktivna
-        showAuthMsg('Preveri svoj email in potrdi račun. Nato se prijavi.', 'success');
+        const verifyMsg = AUTH._checkoutContext
+          ? 'Potrdi email, nato se vrni in prijavi — nadaljuješ z nakupom.'
+          : 'Preveri svoj email in potrdi račun. Nato se prijavi.';
+        showAuthMsg(verifyMsg, 'success');
         btn.disabled = false;
         btn.textContent = 'Ustvari račun';
         return;
       } else if (result.data?.user && result.data.session) {
-        // Email verifikacija ni zahtevana — nadaljuj v kalkulator
+        // Email verifikacija ni zahtevana — kliči pending callback ali onboarding
         AUTH.user = result.data.user;
         AUTH.isPremium = false;
         updateAuthUI();
         setTimeout(() => {
           closeAuthModal();
-          showView(2); // preusmeri v kalkulator za onboarding
+          if (AUTH._pendingCallback) {
+            const cb = AUTH._pendingCallback;
+            AUTH._pendingCallback = null;
+            cb();
+          } else {
+            showView(2); // brez callbacka → onboarding
+          }
         }, 500);
       }
     }
